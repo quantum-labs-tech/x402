@@ -360,14 +360,8 @@ class x402HTTPServerBase:
     ) -> tuple[RouteConfig, str] | None:
         """Find matching route configuration, returning (config, pattern) or None.
 
-        Checks the escaped path first, matching what protects wildcard/param
-        routes from being widened by a decoded separator (see
-        ``_normalize_path``). If that misses and the caller supplied a
-        ``decoded_path`` distinct from ``path`` (the framework's own routing
-        view, e.g. Starlette's ``request.url.path`` or Werkzeug's
-        ``PATH_INFO``), it is checked too, so a literal route cannot be
-        bypassed by encoding the separator the framework decodes but the
-        escaped-path check does not.
+        Checks the escaped ``path`` first, then the framework's ``decoded_path``
+        (if distinct), so a route can't be bypassed via either representation.
         """
         upper_method = method.upper()
 
@@ -1295,13 +1289,9 @@ class x402HTTPServerBase:
 
     @staticmethod
     def _normalize_decoded_path(path: str) -> str:
-        """Normalize a path the framework has already percent-decoded.
-
-        Unlike ``_normalize_path``, this does not decode percent-escapes: the
-        input already passed through exactly one decode by the framework's
-        own router (e.g. Starlette's ``request.url.path`` or Werkzeug's
-        ``PATH_INFO``), and re-decoding it could misinterpret a literal ``%``
-        left behind by an already-resolved double encoding.
+        """Normalize an already framework-decoded path. Does not decode
+        percent-escapes, unlike ``_normalize_path``, since this input was
+        already decoded once by the router.
         """
         path = path.split("?")[0].split("#")[0]
         path = re.sub(r"/+", "/", path)

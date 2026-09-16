@@ -86,14 +86,8 @@ class TestNormalizePath:
 
 
 class TestNormalizeDecodedPath:
-    """``_normalize_decoded_path`` normalizes structure only.
-
-    Unlike ``_normalize_path``, the input has already been percent-decoded
-    once by the framework's own router (e.g. Starlette's ``request.url.path``
-    or Werkzeug's ``PATH_INFO``). Decoding it again would misinterpret a
-    literal ``%`` that only exists because the framework already unescaped a
-    double-encoded sequence (e.g. ``%2541`` -> ``%41`` -> a further, incorrect
-    decode to ``A``), so this normalizer must not touch percent sequences.
+    """``_normalize_decoded_path`` normalizes structure only, and must not
+    re-decode percent-escapes since the input is already framework-decoded.
     """
 
     @pytest.mark.parametrize(
@@ -164,18 +158,8 @@ class TestRouteMatchingPathNormalizationBypass:
 
 
 class TestDecodedPathDivergenceBypass:
-    """A literal route boundary must be protected regardless of which path
+    """A literal route must be protected regardless of which path
     representation (escaped or decoded) a given framework routes on.
-
-    FastAPI/Starlette and Flask/Werkzeug dispatch literal route segments
-    using the *decoded* path (``request.url.path`` / ``PATH_INFO``), while
-    ``_normalize_path`` matches on the *escaped* path to protect wildcard and
-    param routes (see ``TestRouteMatchingPathNormalizationBypass``). For a
-    literal route like ``GET /api/premium``, a request for ``/api%2Fpremium``
-    normalizes (escaped-aware) to ``/api%2Fpremium``, which does not match the
-    literal pattern, while the framework decodes and dispatches to
-    ``/api/premium`` regardless. Without also checking the decoded path,
-    ``requires_payment`` misses this and the middleware fail-opens.
     """
 
     def _server(self, pattern: str = "GET /api/premium") -> x402HTTPServerBase:
@@ -197,15 +181,12 @@ class TestDecodedPathDivergenceBypass:
         assert self._server().requires_payment(context) is True
 
     def test_literal_route_misses_without_decoded_path(self) -> None:
-        # Documents the pre-fix behavior: with no decoded_path supplied, only
-        # the escaped representation is checked, and the bypass succeeds.
+        # Pre-fix behavior: only the escaped path is checked.
         context = _context("/api%2Fpremium", decoded_path=None)
         assert self._server().requires_payment(context) is False
 
     def test_real_extra_segment_still_not_matched(self) -> None:
-        # Guard against over-matching: a genuinely different, deeper resource
-        # (no encoding involved, path == decoded_path) must not be gated by a
-        # single-segment param route.
+        # Guard against over-matching a genuinely different resource.
         context = _context("/api/users/x/y", decoded_path="/api/users/x/y")
         server = self._server(pattern="GET /api/users/:id")
         assert server.requires_payment(context) is False

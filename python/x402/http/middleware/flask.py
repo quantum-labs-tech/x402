@@ -362,13 +362,8 @@ class PaymentMiddleware:
         with self._app.request_context(environ):
             # Create adapter and context
             adapter = FlaskAdapter(request)
-            # Werkzeug's path-type converters capture on the escaped path but
-            # dispatch literal segments on the decoded WSGI PATH_INFO, so
-            # route matching checks both: the escaped path (RAW_URI/
-            # REQUEST_URI when a WSGI server supplies them) protects
-            # wildcard/param routes, and decoded PATH_INFO protects literal
-            # routes from a request that encodes a separator Werkzeug decodes
-            # before dispatch.
+            # Werkzeug dispatches literal routes on decoded PATH_INFO but
+            # wildcard/param routes on the escaped path, so match both.
             context = HTTPRequestContext(
                 adapter=adapter,
                 path=_route_matching_path(environ),

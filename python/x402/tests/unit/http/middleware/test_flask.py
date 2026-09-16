@@ -1348,14 +1348,8 @@ class TestEncodedPathBypass:
 
 
 class TestLiteralRoutePercentEncodedSeparatorBypass:
-    """A literal (non-wildcard) route must stay gated when a WSGI server
-
-    reports an escaped ``RAW_URI``/``REQUEST_URI`` that diverges from the
-    decoded ``PATH_INFO`` Werkzeug actually dispatches on. Werkzeug's own test
-    client never populates ``RAW_URI``/``REQUEST_URI`` (only gunicorn/uWSGI
-    do), so ``environ_overrides`` simulates a real WSGI server: ``PATH_INFO``
-    stays decoded (Werkzeug routes to the literal handler regardless), while
-    ``RAW_URI`` carries the escaped request target.
+    """A literal route must stay gated when a WSGI server reports an escaped
+    ``RAW_URI`` that diverges from the decoded ``PATH_INFO`` Werkzeug dispatches on.
     """
 
     @staticmethod
@@ -1408,9 +1402,7 @@ class TestLiteralRoutePercentEncodedSeparatorBypass:
         ids=["encoded-slash", "lowercase-encoded-slash", "encoded-slash-and-letter"],
     )
     def test_percent_encoded_raw_uri_still_returns_402(self, client, raw_uri: str) -> None:
-        # PATH_INFO stays "/api/premium" (decoded, what Werkzeug dispatches
-        # on); RAW_URI carries the escaped request target a real WSGI server
-        # would report.
+        # PATH_INFO stays decoded; RAW_URI carries the escaped target.
         response = client.get("/api/premium", environ_overrides={"RAW_URI": raw_uri})
         assert response.status_code == 402
 

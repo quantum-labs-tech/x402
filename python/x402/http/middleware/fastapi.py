@@ -249,12 +249,8 @@ def payment_middleware(
 
         # Create adapter and context
         adapter = FastAPIAdapter(request)
-        # Starlette dispatches wildcard/path-type converters on the escaped
-        # path but literal segments on the decoded request.url.path, so route
-        # matching checks both: the escaped raw_path protects wildcard/param
-        # routes from a decoded separator widening a capture group, and
-        # decoded request.url.path protects literal routes from a request
-        # that encodes the separator Starlette itself decodes before dispatch.
+        # Starlette dispatches literal routes on the decoded path but
+        # wildcard/param routes on the escaped one, so match both.
         raw_path = request.scope["raw_path"].decode("ascii").split("?")[0]
         context = HTTPRequestContext(
             adapter=adapter,

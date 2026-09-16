@@ -1250,13 +1250,8 @@ class TestEncodedPathBypass:
 
 
 class TestLiteralRoutePercentEncodedSeparatorBypass:
-    """A literal (non-wildcard) route must stay gated when a request encodes
-
-    its path separator, even though Starlette dispatches on the decoded
-    ``scope["path"]`` while the middleware historically matched only on the
-    escaped ``raw_path``. Reproduces H1 report: ``GET /api/premium`` behind
-    ``payment_middleware`` served its paid response for ``/api%2Fpremium``
-    with no payment header, verification, or settlement.
+    """A literal route must stay gated when a request encodes its path
+    separator, even though Starlette dispatches on the decoded path.
     """
 
     @staticmethod
